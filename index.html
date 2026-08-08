@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>เกมทำฟาร์ม - พืชเน่าเสียภายใน 15 นาที</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    
+    body {
+      background-color: #f4f6f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      user-select: none;
+    }
+
+    .game-board {
+      width: 750px;
+      height: 700px;
+      background-color: #fafafa;
+      position: relative;
+      border: 4px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #ffffff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: bold;
+      z-index: 10;
+      font-size: 0.85rem;
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .weather-indicator {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #fff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      border: 2px solid #333;
+      z-index: 10;
+    }
+
+    .log-box {
+      position: absolute;
+      top: 48px;
+      left: 10px;
+      right: 10px;
+      height: 24px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: #d32f2f;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      z-index: 10;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .top-shops {
+      position: absolute;
+      top: 80px;
+      left: 30px;
+      right: 30px;
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .shop-box {
+      flex: 1;
+      height: 65px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border-radius: 4px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+    }
+
+    .shop-sell { background-color: #ff3b30; }
+    .shop-seeds { background-color: #34aadc; }
+    .shop-gear { background-color: #4cd964; }
+
+    .farm-grid {
+      position: absolute;
+      top: 160px;
+      left: 30px;
+      width: 690px;
+      height: 440px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .grid-block {
+      background-color: #5c3214;
+      border: 2px solid #3e210c;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 4px;
+      padding: 4px;
+      position: relative;
+    }
+
+    .grid-block.locked {
+      background-color: #794d27;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .grid-block.locked:hover {
+      background-color: #8d5b30;
+    }
+
+    .plot {
+      background-color: #3e210c;
+      border: 1px dashed #6d3f19;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      position: relative;
+    }
+
+    .plot.active-target {
+      border: 2px solid #ffeb3b;
+      box-shadow: 0 0 8px #ffeb3b;
+    }
+
+    .crop-status-tag {
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      font-size: 0.6rem;
+      background: rgba(0,0,0,0.6);
+      border-radius: 3px;
+      padding: 0 2px;
+    }
+
+    #player {
+      width: 32px;
+      height: 32px;
+      font-size: 24px;
+      position: absolute;
+      top: 95px;
+      left: 360px;
+      transition: all 0.08s linear;
+      z-index: 20;
+      text-align: center;
+      line-height: 32px;
+    }
+
+    .inventory-bar {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: 8px;
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+      border: 2px solid #333;
+      max-width: 95%;
+      overflow-x: auto;
+    }
+
+    .inv-item {
+      background: #f0f0f0;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      padding: 3px 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+
+    .inv-item.active {
+      border-color: #ff9800;
+      background: #fff3e0;
+    }
+
+    .modal {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      border: 3px solid #333;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 30;
+      width: 370px;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+
+    .modal h3 { margin: 0 0 5px 0; text-align: center; color: #333; }
+    
+    .restock-timer-text {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #666;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .modal-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin: 5px 0;
+      padding: 6px 10px;
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    .modal-btn:hover { background: #e0e0e0; }
+    .modal-btn.sold-out { opacity: 0.5; cursor: not-allowed; background: #ffebee; }
+
+    .close-btn {
+      background: #ff3b30;
+      color: white;
+      border: none;
+      padding: 6px;
+      width: 100%;
+      border-radius: 5px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .stock-badge {
+      font-size: 0.65rem;
+      padding: 2px 5px;
+      border-radius: 4px;
+      margin-left: 5px;
+    }
+    .stock-unlimited { background: #e8f5e9; color: #2e7d32; }
+    .stock-limited { background: #fff3e0; color: #e65100; }
+    .stock-out { background: #ffebee; color: #c62828; }
+    .stock-exclusive { background: #f3e5f5; color: #7b1fa2; border: 1px solid #ba68c8; }
+
+    .hint {
+      position: absolute;
+      bottom: 4px;
+      width: 100%;
+      text-align: center;
+      color: #333;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-board">
+  <div class="top-bar">
+    <div>💰 เงิน: <span id="money">100</span> 🪙</div>
+    <div>💦 บัวรดน้ำ: <span id="water-count">5</span>/5</div>
+    <button onclick="resetGameData()" style="background:#ff3b30; color:white; border:none; border-radius:10px; padding:2px 8px; font-weight:bold; cursor:pointer; font-size:0.75rem;">🗑️ ลบเซฟ</button>
+  </div>
+
+  <div class="weather-indicator" id="weather-display">
+    ☀️ อากาศ: แจ่มใส
+  </div>
+
+  <div class="log-box" id="log-box">
+    📢 ระบบ: ยินดีต้อนรับสู่ฟาร์ม! อย่าลืมเก็บผลผลิตภายใน 15 นาทีไม่งั้นพืชจะเน่า
+  </div>
+
+  <div class="top-shops">
+    <div class="shop-box shop-sell" id="zone-sell">ขาย</div>
+    <div class="shop-box shop-seeds" id="zone-seeds">ร้านค้าพืช</div>
+    <div class="shop-box shop-gear" id="zone-gear">ร้านค้าเกียร์</div>
+  </div>
+
+  <div class="farm-grid" id="farm-grid"></div>
+
+  <div id="player">👨‍🌾</div>
+
+  <div class="inventory-bar" id="inventory-bar"></div>
+
+  <div class="modal" id="modal-sell">
+    <h3>🏬 ร้านรับซื้อผลผลิต</h3>
+    <div id="sell-item-list"></div>
+    <button class="close-btn" onclick="closeModals()">ปิด</button>
+  </div>
+
+  <div class="modal" id="modal-seeds">
+    <h3>🌱 ร้านขายเมล็ดพันธุ์</h3>
+    <div class="restock-timer-text">
+      ⏳ ร้านค้าจะเติมของใหม่ในอีก: <span class="restock-timer-val">05:00</span>
+    </div>
+    <div id="seed-item-list"></div>
+    <button class="close-btn" onclick="closeModals()">ปิด</button>
+  </div>
+
+  <div class="modal" id="modal-gear">
+    <h3>🛠️ ร้านขายอุปกรณ์ & สปริงเกอร์</h3>
+    <div class="restock-timer-text">
+      ⏳ ร้านค้าจะเติมของใหม่ในอีก: <span class="restock-timer-val">05:00</span>
+    </div>
+    <div id="gear-item-list"></div>
+    <button class="close-btn" onclick="closeModals()">ปิด</button>
+  </div>
+
+  <div class="hint">🎮 เดิน: WASD / ลูกศร | 🟢 [E] ปลูก/วางเกียร์ | 🟡 [Q] เก็บเกี่ยว | 💦 [R] รดน้ำ | 🪓 [F] ถอนต้น/รื้อทิ้ง</div>
+</div>
+
+<script>
+  // 🥀 พืชเน่าเสียหากไม่เก็บภายใน 15 นาที (15 * 60 * 1,000 = 900,000 ms)
+  const ROTTEN_TIME_LIMIT = 15 * 60 * 1000;
+
+  const CROPS_DATA = {
+    carrot:        { name: 'แครอท',       seedIcon: '🥕', produceIcon: '🥕', cost: 10,       basePrice: 20,       growTime: 3000,   regrow: false, rarity: 'easy' },
+    tomato:        { name: 'มะเขือเทศ',    seedIcon: '🌱', produceIcon: '🍅', cost: 20,       basePrice: 18,       growTime: 4000,   regrow: true,  regrowTime: 3000, rarity: 'easy' },
+    strawberry:    { name: 'สตรอว์เบอร์รี',   seedIcon: '🌱', produceIcon: '🍓', cost: 35,       basePrice: 30,       growTime: 5000,   regrow: true,  regrowTime: 3500, rarity: 'easy' },
+    corn:          { name: 'ข้าวโพด',     seedIcon: '🌱', produceIcon: '🌽', cost: 50,       basePrice: 45,       growTime: 6000,   regrow: true,  regrowTime: 4000, rarity: 'easy' },
+    chili:         { name: 'พริก',         seedIcon: '🌱', produceIcon: '🌶️', cost: 70,       basePrice: 65,       growTime: 7000,   regrow: true,  regrowTime: 4500, rarity: 'easy' },
+    pineapple:     { name: 'สับปะรด',     seedIcon: '🍍', produceIcon: '🍍', cost: 85,       basePrice: 180,      growTime: 8000,   regrow: false, rarity: 'epic' },
+    blueberry:     { name: 'บลูเบอร์รี',   seedIcon: '🌱', produceIcon: '🫐', cost: 100,      basePrice: 90,       growTime: 9000,   regrow: true,  regrowTime: 5000, rarity: 'epic' },
+    eggplant:      { name: 'มะเขือยาว',    seedIcon: '🌱', produceIcon: '🍆', cost: 120,      basePrice: 110,      growTime: 10000,  regrow: true,  regrowTime: 5500, rarity: 'epic' },
+    avocado:       { name: 'อะโวคาโด',    seedIcon: '🌱', produceIcon: '🥑', cost: 150,      basePrice: 135,      growTime: 12000,  regrow: true,  regrowTime: 6000, rarity: 'epic' },
+    watermelon:    { name: 'แตงโม',       seedIcon: '🍉', produceIcon: '🍉', cost: 180,      basePrice: 400,      growTime: 14000,  regrow: false, rarity: 'epic' },
+    pumpkin:       { name: 'ฟักทอง',      seedIcon: '🎃', produceIcon: '🎃', cost: 220,      basePrice: 500,      growTime: 16000,  regrow: false, rarity: 'epic' },
+    lemon:         { name: 'เลมอน',       seedIcon: '🌱', produceIcon: '🍋', cost: 260,      basePrice: 230,      growTime: 18000,  regrow: true,  regrowTime: 7000, rarity: 'epic' },
+    grape:         { name: 'องุ่น',         seedIcon: '🌱', produceIcon: '🍇', cost: 300,      basePrice: 270,      growTime: 20000,  regrow: true,  regrowTime: 8000, rarity: 'epic' },
+    peach:         { name: 'ลูกพีช',       seedIcon: '🌱', produceIcon: '🍑', cost: 350,      basePrice: 320,      growTime: 22000,  regrow: true,  regrowTime: 9000, rarity: 'epic' },
+    cherry:        { name: 'เชอร์รี',      seedIcon: '🌱', produceIcon: '🍒', cost: 400,      basePrice: 380,      growTime: 25000,  regrow: true,  regrowTime: 10000, rarity: 'epic' },
+    mango:         { name: 'มะม่วง',       seedIcon: '🌱', produceIcon: '🥭', cost: 500,      basePrice: 460,      growTime: 28000,  regrow: true,  regrowTime: 12000, rarity: 'epic' },
+    coconut:       { name: 'มะพร้าว',      seedIcon: '🌱', produceIcon: '🥥', cost: 600,      basePrice: 550,      growTime: 32000,  regrow: true,  regrowTime: 14000, rarity: 'legendary' },
+    apple:         { name: 'แอปเปิ้ลเขียว', seedIcon: '🌱', produceIcon: '🍏', cost: 750,      basePrice: 700,      growTime: 35000,  regrow: true,  regrowTime: 15000, rarity: 'legendary' },
+    dragon:        { name: 'แก้วมังกร',    seedIcon: '🌱', produceIcon: '🐉', cost: 900,      basePrice: 850,      growTime: 40000,  regrow: true,  regrowTime: 18000, rarity: 'legendary' },
+    mushroom:      { name: 'เห็ดมายา',     seedIcon: '🍄', produceIcon: '🍄', cost: 1200,     basePrice: 3000,     growTime: 45000,  regrow: false, rarity: 'legendary' },
+    ratchaphruek:  { name: 'ต้นราชพฤกษ์', seedIcon: '🌼', produceIcon: '🌼', cost: 18000,    basePrice: 45000,    growTime: 50000,  regrow: false, rarity: 'exclusive' },
+    manora:        { name: 'ต้นมโนรา',     seedIcon: '🦚', produceIcon: '🦚', cost: 180000,   basePrice: 400000,   growTime: 80000,  regrow: false, rarity: 'exclusive' },
+    gemtree:       { name: 'พฤกษาอัญมณี', seedIcon: '🌱', produceIcon: '💎', cost: 290000,   basePrice: 250000,   growTime: 120000, regrow: true,  regrowTime: 40000, rarity: 'exclusive' },
+    heavenly:      { name: 'ต้นดาวดึงส์',   seedIcon: '🌟', produceIcon: '🌟', cost: 1000000,  basePrice: 2500000,  growTime: 120000, regrow: false, rarity: 'exclusive' },
+    giantbean:     { name: 'ต้นถั่วยักษ์',   seedIcon: '🫘', produceIcon: '🫘', cost: 1500000,  basePrice: 3800000,  growTime: 180000, regrow: false, rarity: 'exclusive' },
+    serpentdragon: { name: 'ต้นมังกรสรพิษ', seedIcon: '🐉', produceIcon: '🐉', cost: 5000000,  basePrice: 13500000, growTime: 300000, regrow: false, rarity: 'exclusive' }
+  };
+
+  const GEAR_DATA = {
+    waterCan: { name: '💦 เติมน้ำบัวรดน้ำ', cost: 10, rarity: 'easy' },
+    sprinklerBasic: { name: '🚿 Basic Sprinkler (+1.3x)', cost: 80, rarity: 'easy' },
+    sprinklerAdvanced: { name: '💧 Advanced Sprinkler (+1.8x)', cost: 300, rarity: 'epic' },
+    sprinklerMaster: { name: '🌊 Master Sprinkler (+2.5x)', cost: 1200, rarity: 'legendary' },
+    sprinklerHeavenly: { name: '✨ Heavenly Sprinkler (+5.0x)', cost: 5000, rarity: 'exclusive' },
+    lightningRod: { name: '⚡ เสาล่อฟ้า', cost: 150, rarity: 'epic' }
+  };
+
+  let money = 100;
+  let waterCan = 5;
+  let selectedHand = 'carrot';
+  let playerPos = { x: 360, y: 95 };
+  let moveSpeed = 12;
+
+  let shopSeedStock = {};
+  let shopGearStock = {};
+
+  let restockTimeLeft = 300;      // Restock ทุก 5 นาที
+  let exclusiveCounter = 0;
+
+  let inventory = {
+    seeds: { 
+      carrot: 2, tomato: 0, strawberry: 0, corn: 0, chili: 0, 
+      pineapple: 0, blueberry: 0, eggplant: 0, avocado: 0, watermelon: 0, 
+      pumpkin: 0, lemon: 0, grape: 0, peach: 0, cherry: 0, 
+      mango: 0, coconut: 0, apple: 0, dragon: 0, mushroom: 0,
+      ratchaphruek: 0, manora: 0, gemtree: 0, heavenly: 0, giantbean: 0, serpentdragon: 0
+    },
+    produce: [],
+    gear: { sprinklerBasic: 0, sprinklerAdvanced: 0, sprinklerMaster: 0, sprinklerHeavenly: 0, lightningRod: 0 }
+  };
+
+  let farmBlocks = [
+    { id: 0, locked: true, cost: 100 },
+    { id: 1, locked: false, cost: 0 },
+    { id: 2, locked: false, cost: 0 },
+    { id: 3, locked: true, cost: 100 },
+    { id: 4, locked: true, cost: 200 },
+    { id: 5, locked: true, cost: 200 },
+    { id: 6, locked: true, cost: 200 },
+    { id: 7, locked: true, cost: 200 }
+  ];
+
+  let plots = [];
+  let currentWeather = 'sunny';
+  let activeModal = null;
+  let activeTarget = null;
+
+  function initGame() {
+    plots = [];
+    for (let b = 0; b < 8; b++) {
+      for (let p = 0; p < 4; p++) {
+        plots.push({
+          id: `b${b}-p${p}`,
+          blockId: b,
+          state: 'empty',
+          cropType: null,
+          gearType: null,
+          progress: 0,
+          status: 'normal',
+          timer: null,
+          rottenTimer: null
+        });
+      }
+    }
+
+    loadGameData();
+    restockShops(false);
+    
+    renderGrid();
+    renderInventory();
+    updateUI();
+    startWeatherSystem();
+    startRestockTimers();
+  }
+
+  function restockShops(isExclusiveRound = false) {
+    Object.keys(CROPS_DATA).forEach(key => {
+      const rarity = CROPS_DATA[key].rarity;
+      if (rarity === 'easy') {
+        shopSeedStock[key] = -1;
+      } else if (rarity === 'epic') {
+        shopSeedStock[key] = Math.random() < 0.5 ? Math.floor(Math.random() * 4) + 1 : 0;
+      } else if (rarity === 'legendary') {
+        shopSeedStock[key] = Math.random() < 0.2 ? 1 : 0;
+      } else if (rarity === 'exclusive') {
+        if (isExclusiveRound) shopSeedStock[key] = 1;
+        else if (shopSeedStock[key] === undefined) shopSeedStock[key] = 0;
+      }
+    });
+
+    Object.keys(GEAR_DATA).forEach(key => {
+      const rarity = GEAR_DATA[key].rarity;
+      if (rarity === 'easy') {
+        shopGearStock[key] = -1;
+      } else if (rarity === 'epic') {
+        shopGearStock[key] = Math.random() < 0.5 ? Math.floor(Math.random() * 3) + 1 : 0;
+      } else if (rarity === 'legendary') {
+        shopGearStock[key] = Math.random() < 0.2 ? 1 : 0;
+      } else if (rarity === 'exclusive') {
+        if (isExclusiveRound) shopGearStock[key] = 1;
+        else if (shopGearStock[key] === undefined) shopGearStock[key] = 0;
+      }
+    });
+
+    if (isExclusiveRound) {
+      addLog("👑 สินค้าระดับ Exclusive โผล่มาวางขายในรอบนี้แล้ว!");
+    } else {
+      addLog("🔔 ร้านค้า Restock เติมสินค้าเรียบร้อยแล้ว!");
+    }
+
+    if (activeModal === 'modal-seeds') renderSeedShop();
+    if (activeModal === 'modal-gear') renderGearShop();
+  }
+
+  function startRestockTimers() {
+    setInterval(() => {
+      restockTimeLeft--;
+
+      if (restockTimeLeft <= 0) {
+        restockTimeLeft = 300;
+        exclusiveCounter++;
+
+        const isExclusiveRound = (exclusiveCounter % 4 === 0);
+        restockShops(isExclusiveRound);
+      }
+
+      updateTimersUI();
+    }, 1000);
+  }
+
+  function updateTimersUI() {
+    const rMins = Math.floor(restockTimeLeft / 60).toString().padStart(2, '0');
+    const rSecs = (restockTimeLeft % 60).toString().padStart(2, '0');
+    document.querySelectorAll('.restock-timer-val').forEach(el => el.innerText = `${rMins}:${rSecs}`);
+  }
+
+  window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+
+    if (key === 'arrowup' || key === 'w') playerPos.y = Math.max(10, playerPos.y - moveSpeed);
+    if (key === 'arrowdown' || key === 's') playerPos.y = Math.min(640, playerPos.y + moveSpeed);
+    if (key === 'arrowleft' || key === 'a') playerPos.x = Math.max(10, playerPos.x - moveSpeed);
+    if (key === 'arrowright' || key === 'd') playerPos.x = Math.min(705, playerPos.x + moveSpeed);
+
+    if (key === 'e') handleActionE();
+    if (key === 'q') handleActionQ();
+    if (key === 'r') handleWatering();
+    if (key === 'f') handleActionF_RemoveCrop();
+
+    updatePlayerUI();
+    checkInteractions();
+  });
+
+  function updatePlayerUI() {
+    const p = document.getElementById('player');
+    p.style.top = playerPos.y + 'px';
+    p.style.left = playerPos.x + 'px';
+  }
+
+  function checkInteractions() {
+    const pEl = document.getElementById('player').getBoundingClientRect();
+
+    const sellRect = document.getElementById('zone-sell').getBoundingClientRect();
+    const seedsRect = document.getElementById('zone-seeds').getBoundingClientRect();
+    const gearRect = document.getElementById('zone-gear').getBoundingClientRect();
+
+    if (checkOverlap(pEl, sellRect)) openModal('modal-sell');
+    else if (checkOverlap(pEl, seedsRect)) openModal('modal-seeds');
+    else if (checkOverlap(pEl, gearRect)) openModal('modal-gear');
+    else if (activeModal) closeModalIfSteppedAway(pEl, sellRect, seedsRect, gearRect);
+
+    activeTarget = null;
+    document.querySelectorAll('.plot').forEach(el => el.classList.remove('active-target'));
+
+    plots.forEach(plot => {
+      if (farmBlocks[plot.blockId].locked) return;
+      const el = document.getElementById(`plot-${plot.id}`);
+      if (el && checkOverlap(pEl, el.getBoundingClientRect())) {
+        activeTarget = plot;
+        el.classList.add('active-target');
+      }
+    });
+  }
+
+  function checkOverlap(r1, r2) {
+    return !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
+  }
+
+  function closeModalIfSteppedAway(pEl, r1, r2, r3) {
+    if (!checkOverlap(pEl, r1) && !checkOverlap(pEl, r2) && !checkOverlap(pEl, r3)) {
+      closeModals();
+    }
+  }
+
+  function handleActionE() {
+    if (!activeTarget) return;
+
+    const sprinklerTypes = {
+      sprinklerBasic: { duration: 30000, name: 'Basic Sprinkler' },
+      sprinklerAdvanced: { duration: 45000, name: 'Advanced Sprinkler' },
+      sprinklerMaster: { duration: 60000, name: 'Master Sprinkler' },
+      sprinklerHeavenly: { duration: 90000, name: 'Heavenly Sprinkler' }
+    };
+
+    if (sprinklerTypes[selectedHand]) {
+      if (activeTarget.state === 'empty' && inventory.gear[selectedHand] > 0) {
+        inventory.gear[selectedHand]--;
+        activeTarget.state = 'gear';
+        activeTarget.gearType = selectedHand;
+
+        const gearInfo = sprinklerTypes[selectedHand];
+        
+        setTimeout(() => {
+          if (activeTarget.state === 'gear' && activeTarget.gearType === selectedHand) {
+            activeTarget.state = 'empty';
+            activeTarget.gearType = null;
+            renderGrid();
+            addLog(`💨 ${gearInfo.name} ทำงานครบเวลา พังลงเรียบร้อย!`);
+          }
+        }, gearInfo.duration);
+
+        renderGrid();
+        renderInventory();
+        addLog(`🚿 วาง ${gearInfo.name} เรียบร้อย!`);
+      }
+      return;
+    }
+
+    if (selectedHand === 'lightningRod') {
+      if (activeTarget.state === 'empty' && inventory.gear.lightningRod > 0) {
+        inventory.gear.lightningRod--;
+        activeTarget.state = 'gear';
+        activeTarget.gearType = 'lightningRod';
+        renderGrid();
+        renderInventory();
+        addLog(`⚡ วางเสาล่อฟ้าเรียบร้อย!`);
+      }
+      return;
+    }
+
+    if (CROPS_DATA[selectedHand] && activeTarget.state === 'empty') {
+      if (inventory.seeds[selectedHand] > 0) {
+        inventory.seeds[selectedHand]--;
+        activeTarget.state = 'growing';
+        activeTarget.cropType = selectedHand;
+        activeTarget.progress = 0;
+        activeTarget.status = 'normal';
+        startCropGrowth(activeTarget);
+        renderGrid();
+        renderInventory();
+        addLog(`🌱 ปลูก ${CROPS_DATA[selectedHand].name} แล้ว!`);
+      } else {
+        addLog(`❌ เมล็ด ${CROPS_DATA[selectedHand].name} หมด!`);
+      }
+    }
+  }
+
+  function handleActionF_RemoveCrop() {
+    if (!activeTarget) return;
+
+    if (activeTarget.state !== 'empty') {
+      clearPlotTimers(activeTarget);
+
+      let msg = `🪓 ถอนต้นไม้ออกจากแปลงเรียบร้อยแล้ว!`;
+      if (activeTarget.state === 'rotten') {
+        msg = `🧹 ทำความสะอาดถอนพืชเน่าทิ้งเรียบร้อยแล้ว!`;
+      } else if (activeTarget.state === 'gear') {
+        msg = `🪓 รื้อถอนอุปกรณ์เรียบร้อย!`;
+      }
+
+      activeTarget.state = 'empty';
+      activeTarget.cropType = null;
+      activeTarget.gearType = null;
+      activeTarget.progress = 0;
+      activeTarget.status = 'normal';
+      renderGrid();
+      addLog(msg);
+    } else {
+      addLog(`❌ แปลงนี้ว่างเปล่าอยู่แล้ว`);
+    }
+  }
+
+  function clearPlotTimers(plot) {
+    if (plot.timer) { clearInterval(plot.timer); plot.timer = null; }
+    if (plot.rottenTimer) { clearTimeout(plot.rottenTimer); plot.rottenTimer = null; }
+  }
+
+  function startCropGrowth(plot) {
+    const data = CROPS_DATA[plot.cropType];
+    const totalTime = data.growTime;
+    const interval = 200;
+    const step = (interval / totalTime) * 100;
+
+    plot.timer = setInterval(() => {
+      let boost = getSprinklerBoost(plot);
+      plot.progress += step * boost;
+
+      if (plot.progress >= 100) {
+        clearInterval(plot.timer);
+        plot.timer = null;
+        plot.progress = 100;
+
+        if (data.regrow) {
+          plot.state = 'mature';
+          startFruitProduction(plot);
+        } else {
+          plot.state = 'has_fruit';
+          startRottenTimer(plot);
+        }
+        renderGrid();
+      }
+    }, interval);
+  }
+
+  // 🥀 เริ่มนับถอยหลังพืชเน่าเสีย 15 นาที
+  function startRottenTimer(plot) {
+    if (plot.rottenTimer) clearTimeout(plot.rottenTimer);
+
+    plot.rottenTimer = setTimeout(() => {
+      if (plot.state === 'has_fruit') {
+        plot.state = 'rotten';
+        plot.status = 'normal';
+        renderGrid();
+        addLog(`🥀 ต้น ${CROPS_DATA[plot.cropType].name} เน่าเสียทั้งต้นแล้วเนื่องจากไม่เก็บภายใน 15 นาที! [กด F ถอนทิ้ง]`);
+      }
+    }, ROTTEN_TIME_LIMIT);
+  }
+
+  function getSprinklerBoost(plot) {
+    let maxBoost = 1.0;
+
+    plots.forEach(p => {
+      if (p.state === 'gear') {
+        if (p.gearType === 'sprinklerBasic' && p.id === plot.id) maxBoost = Math.max(maxBoost, 1.3);
+        if (p.gearType === 'sprinklerAdvanced' && p.blockId === plot.blockId) maxBoost = Math.max(maxBoost, 1.8);
+        if (p.gearType === 'sprinklerMaster') maxBoost = Math.max(maxBoost, 2.5);
+        if (p.gearType === 'sprinklerHeavenly') maxBoost = Math.max(maxBoost, 5.0);
+      }
+    });
+
+    return maxBoost;
+  }
+
+  function startFruitProduction(plot) {
+    const data = CROPS_DATA[plot.cropType];
+    setTimeout(() => {
+      if (plot.state === 'mature') {
+        plot.state = 'has_fruit';
+        startRottenTimer(plot);
+        renderGrid();
+        addLog(`✨ ต้น ${data.name} ออกผลผลิตแล้ว! (มีเวลาเก็บก่อนเน่า 15 นาที)`);
+      }
+    }, data.regrowTime);
+  }
+
+  function handleActionQ() {
+    if (!activeTarget) return;
+
+    if (activeTarget.state === 'rotten') {
+      addLog(`❌ พืชต้นนี้เน่าเสียแล้ว! กด [F] เพื่อถอนต้นทิ้ง`);
+      return;
+    }
+
+    if (activeTarget.state !== 'has_fruit') return;
+
+    if (activeTarget.rottenTimer) {
+      clearTimeout(activeTarget.rottenTimer);
+      activeTarget.rottenTimer = null;
+    }
+
+    const data = CROPS_DATA[activeTarget.cropType];
+
+    inventory.produce.push({
+      cropType: activeTarget.cropType,
+      status: activeTarget.status
+    });
+
+    addLog(`🧺 เก็บเกี่ยว ${data.produceIcon} ${data.name} [สถานะ: ${getStatusName(activeTarget.status)}]`);
+
+    if (data.regrow) {
+      activeTarget.state = 'mature';
+      activeTarget.status = 'normal';
+      startFruitProduction(activeTarget);
+    } else {
+      activeTarget.state = 'empty';
+      activeTarget.cropType = null;
+      activeTarget.status = 'normal';
+    }
+
+    renderGrid();
+    renderInventory();
+  }
+
+  function handleWatering() {
+    if (!activeTarget || activeTarget.state !== 'growing') return;
+    if (waterCan <= 0) {
+      addLog(`❌ น้ำในบัวรดน้ำหมด! เดินไปเติมที่ร้านค้าเกียร์`);
+      return;
+    }
+
+    waterCan--;
+    activeTarget.progress = Math.min(100, activeTarget.progress + 10);
+    updateUI();
+    renderGrid();
+    addLog(`💦 รดน้ำเร่งโต +10% (เหลือน้ำ ${waterCan}/5)`);
+  }
+
+  function startWeatherSystem() {
+    setInterval(() => {
+      const rand = Math.random();
+
+      if (rand < 0.40) {
+        setWeather('sunny', '☀️ อากาศ: แจ่มใส');
+      } else if (rand < 0.70) {
+        setWeather('rainy', '🌧️ อากาศ: ฝนตกหนัก');
+        applyRainEffect();
+      } else if (rand < 0.90) {
+        setWeather('thunder', '⚡ อากาศ: พายุฟ้าผ่ารุนแรง!');
+        applyThunderEffect();
+      } else {
+        setWeather('meteor', '🌠 อากาศ: ฝนดาวตก!');
+        applyMeteorEffect();
+      }
+    }, 20000);
+  }
+
+  function setWeather(type, text) {
+    currentWeather = type;
+    document.getElementById('weather-display').innerText = text;
+  }
+
+  function applyRainEffect() {
+    let affected = 0;
+    plots.forEach(plot => {
+      if (plot.state !== 'empty' && plot.state !== 'gear' && plot.state !== 'rotten' && plot.status === 'normal') {
+        if (Math.random() < 0.40) { plot.status = 'wet'; affected++; }
+      }
+    });
+    if (affected > 0) { renderGrid(); addLog(`🌧️ ฝนตก! พืช ${affected} ต้นติดสถานะ [💧 เปียก]`); }
+  }
+
+  function applyThunderEffect() {
+    let affected = 0;
+    plots.forEach(plot => {
+      if (plot.state !== 'empty' && plot.state !== 'gear' && plot.state !== 'rotten') {
+        let hasRod = plots.some(p => p.state === 'gear' && p.gearType === 'lightningRod' && p.blockId === plot.blockId);
+        let chance = hasRod ? 0.60 : 0.15;
+        if (Math.random() < chance) { plot.status = 'glowing'; affected++; }
+      }
+    });
+    if (affected > 0) { renderGrid(); addLog(`⚡ ฟ้าผ่า! พืช ${affected} ต้นติดสถานะ [⚡ เรืองแสง] (ราคา x3!)`); }
+  }
+
+  function applyMeteorEffect() {
+    let affected = 0;
+    plots.forEach(plot => {
+      if (plot.state !== 'empty' && plot.state !== 'gear' && plot.state !== 'rotten') {
+        if (Math.random() < 0.08) { plot.status = 'shiny'; affected++; }
+      }
+    });
+    if (affected > 0) { renderGrid(); addLog(`🌠 ดาวตก! พืช ${affected} ต้นติดสถานะ [✨ วิบวับ] (ราคา x20!!)`); }
+  }
+
+  function getStatusName(status) {
+    if (status === 'wet') return '💧 เปียก';
+    if (status === 'glowing') return '⚡ เรืองแสง';
+    if (status === 'shiny') return '✨ วิบวับ';
+    return 'ธรรมดา';
+  }
+
+  function openModal(id) {
+    closeModals();
+    activeModal = id;
+    document.getElementById(id).style.display = 'block';
+
+    if (id === 'modal-seeds') renderSeedShop();
+    if (id === 'modal-gear') renderGearShop();
+    if (id === 'modal-sell') renderSellShop();
+  }
+
+  function closeModals() {
+    activeModal = null;
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+  }
+
+  function renderSeedShop() {
+    const list = document.getElementById('seed-item-list');
+    list.innerHTML = '';
+
+    Object.keys(CROPS_DATA).forEach(key => {
+      const crop = CROPS_DATA[key];
+      const stock = shopSeedStock[key] ?? 0;
+
+      let stockTag = '';
+      if (stock === -1) stockTag = '<span class="stock-badge stock-unlimited">มีตลอด</span>';
+      else if (stock > 0) {
+        if (crop.rarity === 'exclusive') stockTag = `<span class="stock-badge stock-exclusive">👑 EXCLUSIVE (${stock})</span>`;
+        else stockTag = `<span class="stock-badge stock-limited">เหลือ ${stock}</span>`;
+      } else {
+        stockTag = '<span class="stock-badge stock-out">หมด</span>';
+      }
+
+      const btn = document.createElement('button');
+      btn.className = `modal-btn ${stock === 0 ? 'sold-out' : ''}`;
+      btn.innerHTML = `<span>ซื้อ ${crop.produceIcon} ${crop.name} ${stockTag}</span> <span>${crop.cost.toLocaleString()} 🪙</span>`;
+      btn.onclick = () => buySeed(key);
+      list.appendChild(btn);
+    });
+  }
+
+  function buySeed(key) {
+    const stock = shopSeedStock[key];
+    if (stock === 0) {
+      addLog(`❌ สินค้านี้หมดชั่วคราว! รอ Restock ในรอบถัดไป`);
+      return;
+    }
+
+    const cost = CROPS_DATA[key].cost;
+    if (money >= cost) {
+      money -= cost;
+      if (stock > 0) shopSeedStock[key]--;
+
+      inventory.seeds[key] = (inventory.seeds[key] || 0) + 1;
+      updateUI();
+      renderInventory();
+      renderSeedShop();
+      addLog(`🛒 ซื้อเมล็ด ${CROPS_DATA[key].name} เรียบร้อย!`);
+    } else {
+      addLog(`❌ เงินไม่พอซื้อเมล็ดพันธุ์!`);
+    }
+  }
+
+  function renderGearShop() {
+    const list = document.getElementById('gear-item-list');
+    list.innerHTML = '';
+
+    Object.keys(GEAR_DATA).forEach(key => {
+      const gear = GEAR_DATA[key];
+      const stock = shopGearStock[key] ?? 0;
+
+      let stockTag = '';
+      if (stock === -1) stockTag = '<span class="stock-badge stock-unlimited">มีตลอด</span>';
+      else if (stock > 0) {
+        if (gear.rarity === 'exclusive') stockTag = `<span class="stock-badge stock-exclusive">👑 EXCLUSIVE (${stock})</span>`;
+        else stockTag = `<span class="stock-badge stock-limited">เหลือ ${stock}</span>`;
+      } else {
+        stockTag = '<span class="stock-badge stock-out">หมด</span>';
+      }
+
+      const btn = document.createElement('button');
+      btn.className = `modal-btn ${stock === 0 ? 'sold-out' : ''}`;
+      btn.innerHTML = `<span>${gear.name} ${stockTag}</span> <span>${gear.cost.toLocaleString()} 🪙</span>`;
+      btn.onclick = () => buyGear(key);
+      list.appendChild(btn);
+    });
+  }
+
+  function buyGear(type) {
+    const stock = shopGearStock[type];
+    if (stock === 0) {
+      addLog(`❌ สินค้านี้หมดชั่วคราว! รอ Restock ในรอบถัดไป`);
+      return;
+    }
+
+    const gear = GEAR_DATA[type];
+    if (money >= gear.cost) {
+      money -= gear.cost;
+      if (stock > 0) shopGearStock[type]--;
+
+      if (type === 'waterCan') {
+        waterCan = 5;
+        addLog(`💦 เติมน้ำในบัวรดน้ำเต็มแล้ว!`);
+      } else {
+        inventory.gear[type] = (inventory.gear[type] || 0) + 1;
+        addLog(`🛒 ซื้อ ${gear.name} สำเร็จ!`);
+      }
+
+      updateUI();
+      renderInventory();
+      renderGearShop();
+    } else {
+      addLog(`❌ เงินไม่พอ!`);
+    }
+  }
+
+  function renderSellShop() {
+    const list = document.getElementById('sell-item-list');
+    list.innerHTML = '';
+
+    if (inventory.produce.length === 0) {
+      list.innerHTML = '<div style="text-align:center; padding:10px; color:#888;">ไม่มีผลผลิตในกระเป๋า</div>';
+      return;
+    }
+
+    inventory.produce.forEach((item, index) => {
+      const crop = CROPS_DATA[item.cropType];
+      let price = crop.basePrice;
+      if (item.status === 'wet') price += 6;
+      if (item.status === 'glowing') price *= 3;
+      if (item.status === 'shiny') price *= 20;
+
+      const btn = document.createElement('button');
+      btn.className = 'modal-btn';
+      btn.innerHTML = `<span>ขาย ${crop.produceIcon} ${crop.name} (${getStatusName(item.status)})</span> <span>+${price.toLocaleString()} 🪙</span>`;
+      btn.onclick = () => sellProduce(index, price);
+      list.appendChild(btn);
+    });
+  }
+
+  function sellProduce(index, price) {
+    money += price;
+    const sold = inventory.produce.splice(index, 1)[0];
+    updateUI();
+    renderInventory();
+    renderSellShop();
+    addLog(`💰 ขาย ${CROPS_DATA[sold.cropType].name} ได้รับ +${price.toLocaleString()} 🪙`);
+  }
+
+  function unlockBlock(blockId) {
+    const block = farmBlocks[blockId];
+    if (money >= block.cost) {
+      money -= block.cost;
+      block.locked = false;
+      updateUI();
+      renderGrid();
+      addLog(`🎉 ปลดล็อกโซนขยายพื้นที่เรียบร้อย!`);
+    } else {
+      addLog(`❌ เงินไม่พอขยายพื้นที่ (ต้องการ ${block.cost} 🪙)`);
+    }
+  }
+
+  function renderGrid() {
+    const container = document.getElementById('farm-grid');
+    container.innerHTML = '';
+
+    farmBlocks.forEach(block => {
+      const bEl = document.createElement('div');
+
+      if (block.locked) {
+        bEl.className = 'grid-block locked';
+        bEl.innerText = `ขยาย\n(${block.cost}🪙)`;
+        bEl.onclick = () => unlockBlock(block.id);
+      } else {
+        bEl.className = 'grid-block';
+        const blockPlots = plots.filter(p => p.blockId === block.id);
+        blockPlots.forEach(plot => {
+          const pEl = document.createElement('div');
+          pEl.className = 'plot';
+          pEl.id = `plot-${plot.id}`;
+
+          if (plot.state === 'growing') {
+            pEl.innerText = '🌱';
+            pEl.title = `กำลังโต: ${Math.floor(plot.progress)}%`;
+          } else if (plot.state === 'mature') {
+            pEl.innerText = '🌳';
+          } else if (plot.state === 'has_fruit') {
+            pEl.innerText = CROPS_DATA[plot.cropType].produceIcon;
+          } else if (plot.state === 'rotten') {
+            pEl.innerText = '🥀';
+            pEl.title = 'เน่าเสีย! [กด F เพื่อถอนทิ้ง]';
+          } else if (plot.state === 'gear') {
+            if (plot.gearType === 'sprinklerBasic') pEl.innerText = '🚿';
+            else if (plot.gearType === 'sprinklerAdvanced') pEl.innerText = '💧';
+            else if (plot.gearType === 'sprinklerMaster') pEl.innerText = '🌊';
+            else if (plot.gearType === 'sprinklerHeavenly') pEl.innerText = '✨';
+            else if (plot.gearType === 'lightningRod') pEl.innerText = '⚡';
+          } else {
+            pEl.innerText = '';
+          }
+
+          if (plot.status !== 'normal' && plot.state !== 'rotten') {
+            const tag = document.createElement('span');
+            tag.className = 'crop-status-tag';
+            tag.innerText = plot.status === 'wet' ? '💧' : plot.status === 'glowing' ? '⚡' : '✨';
+            pEl.appendChild(tag);
+          }
+
+          bEl.appendChild(pEl);
+        });
+      }
+
+      container.appendChild(bEl);
+    });
+  }
+
+  function renderInventory() {
+    const bar = document.getElementById('inventory-bar');
+    bar.innerHTML = '';
+
+    Object.keys(CROPS_DATA).forEach(key => {
+      const count = inventory.seeds[key] || 0;
+      const item = document.createElement('div');
+      item.className = `inv-item ${selectedHand === key ? 'active' : ''}`;
+      item.innerText = `${CROPS_DATA[key].produceIcon} ${CROPS_DATA[key].name} (${count})`;
+      item.onclick = () => { selectedHand = key; renderInventory(); };
+      bar.appendChild(item);
+    });
+
+    const gearIcons = {
+      sprinklerBasic: '🚿 Basic',
+      sprinklerAdvanced: '💧 Advanced',
+      sprinklerMaster: '🌊 Master',
+      sprinklerHeavenly: '✨ Heavenly',
+      lightningRod: '⚡ เสาล่อฟ้า'
+    };
+
+    Object.keys(gearIcons).forEach(gKey => {
+      if (inventory.gear[gKey] > 0) {
+        const item = document.createElement('div');
+        item.className = `inv-item ${selectedHand === gKey ? 'active' : ''}`;
+        item.innerText = `${gearIcons[gKey]} (${inventory.gear[gKey]})`;
+        item.onclick = () => { selectedHand = gKey; renderInventory(); };
+        bar.appendChild(item);
+      }
+    });
+  }
+
+  function updateUI() {
+    document.getElementById('money').innerText = money.toLocaleString();
+    document.getElementById('water-count').innerText = waterCan;
+    saveGameData();
+  }
+
+  function addLog(msg) {
+    const logBox = document.getElementById('log-box');
+    logBox.innerText = `📢 ${msg}`;
+  }
+
+  function saveGameData() {
+    const saveData = {
+      money: money,
+      waterCan: waterCan,
+      inventory: inventory,
+      farmBlocks: farmBlocks,
+      shopSeedStock: shopSeedStock,
+      shopGearStock: shopGearStock,
+      restockTimeLeft: restockTimeLeft,
+      exclusiveCounter: exclusiveCounter,
+      plots: plots.map(p => ({
+        id: p.id,
+        blockId: p.blockId,
+        state: p.state,
+        cropType: p.cropType,
+        gearType: p.gearType,
+        progress: p.progress,
+        status: p.status
+      }))
+    };
+    localStorage.setItem('myFarmSaveDataData', JSON.stringify(saveData));
+  }
+
+  function loadGameData() {
+    const saved = localStorage.getItem('myFarmSaveDataData');
+    if (!saved) return false;
+
+    try {
+      const parsed = JSON.parse(saved);
+      money = parsed.money ?? 100;
+      waterCan = parsed.waterCan ?? 5;
+      if (parsed.inventory) inventory = parsed.inventory;
+      if (parsed.farmBlocks) farmBlocks = parsed.farmBlocks;
+      if (parsed.shopSeedStock) shopSeedStock = parsed.shopSeedStock;
+      if (parsed.shopGearStock) shopGearStock = parsed.shopGearStock;
+      if (parsed.restockTimeLeft) restockTimeLeft = parsed.restockTimeLeft;
+      if (parsed.exclusiveCounter) exclusiveCounter = parsed.exclusiveCounter;
+
+      if (parsed.plots) {
+        parsed.plots.forEach(savedPlot => {
+          const plot = plots.find(p => p.id === savedPlot.id);
+          if (plot) {
+            plot.state = savedPlot.state;
+            plot.cropType = savedPlot.cropType;
+            plot.gearType = savedPlot.gearType;
+            plot.progress = savedPlot.progress;
+            plot.status = savedPlot.status;
+
+            if (plot.state === 'growing') {
+              startCropGrowth(plot);
+            } else if (plot.state === 'mature') {
+              startFruitProduction(plot);
+            } else if (plot.state === 'has_fruit') {
+              startRottenTimer(plot);
+            }
+          }
+        });
+      }
+      return true;
+    } catch (e) {
+      console.error("โหลดเซฟล้มเหลว", e);
+      return false;
+    }
+  }
+
+  function resetGameData() {
+    if (confirm("⚠️ คุณต้องการลบเซฟและเริ่มเล่นใหม่ใช่ไหม?")) {
+      localStorage.removeItem('myFarmSaveDataData');
+      location.reload();
+    }
+  }
+
+  initGame();
+</script>
+
+</body>
+</html>
+
